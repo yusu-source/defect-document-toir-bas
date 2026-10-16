@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практическая работа — Дефектовка БАС и дефектная ведомость</title>
+<style>
+:root{--ink:#16233a;--muted:#53637b;--primary:#1b4e8d;--primary-lt:#eaf2fc;--line:#cbd5e1;--paper:#ffffff;--warm:#f5f8fc;--danger:#a32835;--amber:#995b11;--ok:#176043}
+*{box-sizing:border-box}
+body{margin:0;background:#e9eef5;color:var(--ink);font:14px/1.45 'Arial','Helvetica Neue',sans-serif}
+.printbar{position:sticky;top:0;z-index:50;background:#142c4e;color:#fff;padding:12px 20px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 3px 12px #0002}
+.printbar .help{font-size:12px;opacity:.83}
+button{border:0;cursor:pointer;background:#fff;color:#183a66;padding:10px 14px;border-radius:8px;font-weight:700;font-size:13px}
+button.ghost{background:transparent;color:#fff;border:1px solid #a9c1df}
+.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;box-shadow:0 8px 28px #26334c22;padding:14mm 14mm 12mm;position:relative;overflow:hidden}
+.smallcaps{letter-spacing:1.1px;text-transform:uppercase;font-size:10px;color:var(--primary);font-weight:800}
+.topline{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1b4e8d;padding-bottom:11px;margin-bottom:18px;gap:12px}
+.uni{font-size:12px;line-height:1.35;font-weight:bold}
+.docno{font-size:11px;color:var(--muted);text-align:right}
+h1{font-size:29px;line-height:1.12;letter-spacing:-.6px;margin:8px 0 13px;font-weight:800}
+h2{font-size:17px;line-height:1.15;color:var(--primary);margin:18px 0 9px}
+h3{font-size:13.5px;margin:13px 0 6px}
+p{margin:7px 0}
+.subhead{font-size:15px;color:var(--muted);max-width:580px;margin-bottom:17px}
+.rule{height:1px;background:var(--line);margin:14px 0}
+.ribbon{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 16px}
+.tag{display:inline-flex;align-items:center;background:var(--primary-lt);color:#23538a;font-size:11px;font-weight:800;padding:5px 9px;border-radius:5px}
+.tag.red{background:#fceced;color:#9b2934}.tag.amber{background:#fff2dc;color:#81510d}.tag.green{background:#e9f6ef;color:#18633f}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi{border:1px solid #d8e1eb;border-radius:8px;padding:10px 12px;background:var(--warm)}
+.kpi .klabel{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.kpi b{font-size:14px}
+.panel{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;background:#fff}
+.panel.blue{background:#f2f7fe;border-color:#bad0e9}
+.panel.warn{background:#fff6ec;border-color:#efd3a8}
+.panel.alert{background:#fff0f0;border-color:#edc1c6}
+.panel h3:first-child{margin-top:0}
+.lines{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:14px}
+.field{display:flex;gap:6px;align-items:center;min-width:0}
+.field label{color:var(--muted);white-space:nowrap;font-size:11.5px}
+.input{min-width:0;flex:1;border:0;border-bottom:1px solid #92a6c0;background:transparent;border-radius:0;padding:6px 5px 4px;color:var(--ink);font:inherit}
+.input:focus,textarea:focus,select:focus{outline:2px solid #7aa7de;outline-offset:1px}
+ol,ul{margin:6px 0 10px 19px;padding:0}
+li{margin:4px 0}
+.small{font-size:11px;color:var(--muted)}
+.tight li{margin:2px 0}
+table{width:100%;border-collapse:collapse;margin:8px 0;table-layout:fixed}
+th,td{border:1px solid #b8c6d5;padding:6px;vertical-align:top;font-size:11.5px}
+th{background:#eaf1f9;color:#28486f;text-align:left;font-size:10.5px}
+tr{break-inside:avoid;page-break-inside:avoid}
+td input,td select,td textarea{width:100%;font:inherit;color:var(--ink);background:transparent;border:0;resize:vertical;min-height:24px}
+td textarea{line-height:1.3;resize:none;display:block}
+td select{appearance:auto}
+.checkcell{text-align:center;vertical-align:middle}
+.checkcell input{width:15px;height:15px;accent-color:#1b4e8d}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.tick{font-size:12px;display:flex;gap:6px;align-items:center}
+.tick input{accent-color:#1b4e8d}
+.soft{background:#f5f8fc;border-left:3px solid #3772aa;padding:10px 13px;font-size:12px}
+.code{font-weight:800;color:#244e7d}
+.topmark{display:flex;align-items:center;gap:10px;color:#42607f;font-size:10px;letter-spacing:1px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.topmark::after{content:'';height:1px;flex:1;background:#cbd5e1}
+.example-card{padding:9px 11px;background:#f5f8fc;border:1px solid #d7e0ed;border-radius:7px;font-size:12px}
+.casegrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.case{border:1px solid #d4dfeb;background:#fbfcff;border-radius:6px;padding:9px 11px;min-height:68px;font-size:11.5px}
+.case b{color:var(--primary);font-size:11px}
+.case p{margin:3px 0 0}
+.question{margin:10px 0 9px;font-size:12px}
+.writing-line{min-height:42px;width:100%;background:repeating-linear-gradient(to bottom,#fff 0,#fff 25px,#d1dbe6 26px,#fff 27px);border:0;resize:vertical;font:12.5px/26px Arial;padding:0 4px;color:var(--ink)}
+.boxwrite{border:1px solid #b8c6d5;border-radius:5px;min-height:60px;padding:8px;width:100%;font:12px/1.4 Arial;color:var(--ink);resize:vertical}
+.verdicts{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+.verdict{border:1px solid #b9c9d9;border-radius:6px;background:#f9fbfe;padding:7px 9px;font-size:11px;display:flex;align-items:flex-start;gap:6px;flex:1;min-width:120px}
+.verdict input{margin-top:2px;accent-color:#1b4e8d}
+.footer{position:absolute;bottom:8mm;left:14mm;right:14mm;border-top:1px solid #d5dfeb;padding-top:6px;display:flex;justify-content:space-between;color:#8492a6;font-size:10px}
+hr{border:0;border-top:1px solid #dce4ee}
+.diagram{width:100%;height:180px;border:1px solid #d7e1ed;border-radius:8px;background:#f8fbff;display:block}
+.stamp{font-size:11px;color:var(--muted);margin-bottom:5px}
+.defect-table td{height:76px;font-size:11px}
+.defect-table th{font-size:10px}
+.defect-table textarea{min-height:58px}
+@media screen and (max-width:850px){.page{width:100%;min-height:0;margin:0 auto 14px;padding:20px;overflow:visible}.two,.three{grid-template-columns:1fr}.printbar{position:static}.casegrid{grid-template-columns:1fr}.footer{display:none}}
+@page{size:A4 portrait;margin:0}
+@media print{
+ html,body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px}
+ .printbar,.noprint{display:none!important}
+ .page{width:210mm;height:297mm;min-height:0;padding:13mm 14mm 11mm;margin:0;box-shadow:none;break-after:page;page-break-after:always;overflow:visible}
+ .page:last-child{break-after:auto;page-break-after:auto}
+ .input{padding-top:2px}
+ #page1 h2{margin:11px 0 6px} #page1 p{margin:4px 0} #page1 .panel{padding:9px 11px;margin:6px 0} #page1 .subhead{margin-bottom:10px}
+ #page1 td,#page1 th{padding:4px 6px}
+ #page2 h2{margin:10px 0 5px} #page2 li{margin:1px 0} #page2 td,#page2 th{padding:4px 6px} #page2 .panel{padding:9px 12px}
+ .case{background:#fbfcff}
+ .defect-table td{height:76px}
+ h1{font-size:27px}
+ .footer{bottom:8mm}
+ textarea{overflow:hidden;resize:none}
+}
+</style>
+</head>
+<body>
+<div class="printbar">
+ <strong>Практическая работа • ТОиР БАС</strong>
+ <button onclick="window.print()">⎙ Печать / сохранить в PDF</button>
+ <button class="ghost" onclick="downloadFilled()">↓ Скачать заполненный HTML</button>
+ <button class="ghost" onclick="resetFields()">Очистить ответы</button>
+ <span class="help">Заполните поля и нажмите «Печать» → «Сохранить как PDF». Документ работает без интернета.</span>
+</div>
+
+<section class="page" id="page1">
+  <div class="topline"><div class="uni">Югорский государственный университет<br>Инженерная школа цифровых технологий</div><div class="docno">Учебно-методический материал<br>ТОиР беспилотных авиационных систем</div></div>
+  <div class="smallcaps">Практическая работа № 1 • 2 академических часа</div>
+  <h1>Дефектовка БАС и оформление дефектной ведомости</h1>
+  <div class="subhead">Диагностика технического состояния учебного квадрокоптера методом визуального осмотра и документирования выявленных дефектов.</div>
+  <div class="ribbon"><span class="tag">90 минут</span><span class="tag">Начальный уровень</span><span class="tag">Без запуска двигателей</span><span class="tag">Индивидуально / в парах</span></div>
+  <div class="lines">
+    <div class="field"><label>Ф. И. О. студента</label><input class="input" placeholder="Укажите Ф. И. О."></div>
+    <div class="field"><label>Группа</label><input class="input" placeholder="Номер группы"></div>
+    <div class="field"><label>Дата</label><input class="input" type="date"></div>
+    <div class="field"><label>Преподаватель</label><input class="input" placeholder="Ф. И. О."></div>
+  </div>
+  <h2>1. Цель и результаты</h2>
+  <p><b>Цель:</b> научиться обнаруживать признаки неисправностей компонентов БАС, отличать дефект от исправного состояния и оформлять результаты в дефектной ведомости с обоснованным решением о дальнейшей эксплуатации.</p>
+  <div class="two">
+   <div class="panel blue"><h3>После занятия студент умеет</h3><ul class="tight"><li>осматривать БВС по контрольному листу;</li><li>фиксировать конкретные признаки дефектов;</li><li>оценивать значимость дефектов;</li><li>предлагать дальнейшие действия;</li><li>оформлять техническое заключение.</li></ul></div>
+   <div class="panel"><h3>Оборудование и материалы</h3><ul class="tight"><li>учебный квадрокоптер «Геоскан Пионер» или аналог;</li><li>отдельно размещённая АКБ / учебный макет;</li><li>фонарь и лупа (при наличии);</li><li>руководство конкретной модели;</li><li>эта работа и письменные принадлежности.</li></ul></div>
+  </div>
+  <h2>2. Основные понятия</h2>
+  <p><b>Дефект</b> — отдельное несоответствие элемента установленным требованиям (например, трещина винта, повреждение изоляции, ослабленный крепёж).</p>
+  <p><b>Дефектовка</b> — последовательная проверка состояния элементов, установление и фиксация обнаруженных дефектов.</p>
+  <p><b>Дефектная ведомость</b> — документ, где указаны обнаруженный дефект, его местоположение, признаки, значимость, рекомендуемое действие и результат проверки.</p>
+  <div class="soft"><b>Правило записи:</b> не писать «сломано» или «плохое состояние» без уточнения. Правильно: «Воздушный винт № 2: трещина около ступицы, длина ориентировочно 4 мм; требуется замена». Если измерения не проводились, значения помечают как ориентировочные.</div>
+  <h2>3. План выполнения</h2>
+  <table><thead><tr><th style="width:15%">Время</th><th>Этап</th><th>Результат</th></tr></thead><tbody>
+  <tr><td>0–10 мин</td><td>Инструктаж, изучение объекта и обозначений</td><td>Готовность к безопасному осмотру</td></tr>
+  <tr><td>10–30 мин</td><td>Осмотр БВС или анализ учебного кейса</td><td>Заполненный контрольный лист</td></tr>
+  <tr><td>30–65 мин</td><td>Выявление, описание, классификация дефектов</td><td>Дефектная ведомость</td></tr>
+  <tr><td>65–80 мин</td><td>Техническое заключение, ответы на вопросы</td><td>Обоснованное решение</td></tr>
+  <tr><td>80–90 мин</td><td>Самопроверка и сдача работы</td><td>PDF/скан в Moodle</td></tr>
+  </tbody></table>
+  <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>01 / 06</span></div>
+</section>
+
+<section class="page" id="page2">
+ <div class="topmark">Подготовка и безопасный осмотр</div>
+ <h2>4. Техника безопасности</h2>
+ <div class="panel alert"><b>Обязательные ограничения:</b><ul class="tight">
+ <li>До осмотра отключить питание; <b>отсоединить АКБ</b>. Снятие воздушных винтов, когда оно необходимо, выполняется преподавателем или по его разрешению.</li>
+ <li>Не запускать двигатели, не проводить пробный полёт и не подключать подозрительную АКБ.</li>
+ <li>Не вскрывать, не прокалывать, не заряжать и не пытаться выправлять деформированную батарею. При нагреве, запахе, вздутии или повреждении АКБ прекратить работу и сообщить преподавателю.</li>
+ <li>Не выполнять пайку, разборку электроники, измерение на включённом БВС и подтяжку неизвестных креплений без разрешения.</li>
+ <li>При обнаружении потенциально опасного дефекта зафиксировать его и прекратить соответствующие операции.</li>
+ </ul></div>
+ <div class="chips" style="margin:8px 0 12px"><label class="tick"><input type="checkbox"> Инструктаж пройден</label><label class="tick"><input type="checkbox"> БВС обесточен</label><label class="tick"><input type="checkbox"> Преподаватель допустил к осмотру</label></div>
+ <h2>5. Порядок дефектовки</h2>
+ <ol class="tight"><li>Записать модель, идентификатор и выбранный вариант работы.</li><li>Определить внешние элементы и их позиции (схема ниже условная).</li><li>Последовательно проверить раму, крепёж, винты, моторы, проводку, разъёмы, защиту, посадочные элементы и АКБ внешним осмотром.</li><li>Указать результат каждой проверки: <b>И</b> — исправно; <b>Д</b> — признаки дефекта; <b>НП</b> — не проверено/недостаточно данных.</li><li>Перенести выявленные дефекты в ведомость (стр. 4) и вынести решение о допуске (стр. 5).</li></ol>
+ <div class="two" style="gap:13px;align-items:start;margin-top:10px">
+ <div><h3 style="margin-top:0">Учётные данные объекта</h3>
+  <div class="field"><label>Модель</label><input class="input" placeholder="Пионер / аналог"></div>
+  <div class="field"><label>Инв. / бортовой №</label><input class="input" placeholder="или «учебный кейс»"></div>
+  <div class="field"><label>Место осмотра</label><input class="input"></div>
+  <h3>Вариант выполнения</h3>
+  <label class="tick"><input type="radio" name="variant" value="a"> А — реальный обесточенный БВС</label>
+  <label class="tick"><input type="radio" name="variant" value="b"> Б — учебный кейс на стр. 3</label>
+ </div>
+ <div>
+ <svg class="diagram" viewBox="0 0 300 180" role="img" aria-label="Условная схема квадрокоптера с четырьмя двигателями M1–M4">
+  <g stroke="#718cac" stroke-width="19" stroke-linecap="round"><path d="M150 90 L65 38 M150 90 L235 38 M150 90 L65 148 M150 90 L235 148"/></g>
+  <g fill="#dceafe" stroke="#245386" stroke-width="2"><circle cx="65" cy="38" r="25"/><circle cx="235" cy="38" r="25"/><circle cx="65" cy="148" r="25"/><circle cx="235" cy="148" r="25"/><rect x="121" y="63" width="58" height="54" rx="10" fill="#eff5ff"/></g>
+  <g font-size="13" font-family="Arial" font-weight="bold" fill="#234c7b" text-anchor="middle"><text x="65" y="43">M1</text><text x="235" y="43">M2</text><text x="65" y="153">M3</text><text x="235" y="153">M4</text><text x="150" y="95">FC</text></g>
+  <path d="M150 7 l-9 18 h18z" fill="#1d65b3"/><text x="166" y="20" font-size="10" fill="#1d65b3">НОС</text>
+ </svg>
+ <div class="small">Условная схема. Нумерацию моторов и винтов на реальном изделии уточнить по документации модели.</div>
+ </div>
+ </div>
+ <h2>6. Контрольный лист осмотра</h2>
+ <table><thead><tr><th style="width:33%">Проверяемый узел</th><th style="width:9%">И</th><th style="width:9%">Д</th><th style="width:9%">НП</th><th>Признак / примечание</th></tr></thead><tbody>
+ <tr><td>Рама, лучи, соединения</td><td class="checkcell"><input type="radio" name="c1"></td><td class="checkcell"><input type="radio" name="c1"></td><td class="checkcell"><input type="radio" name="c1"></td><td><input aria-label="Рама, примечание"></td></tr>
+ <tr><td>Воздушные винты, ступицы</td><td class="checkcell"><input type="radio" name="c2"></td><td class="checkcell"><input type="radio" name="c2"></td><td class="checkcell"><input type="radio" name="c2"></td><td><input aria-label="Винты, примечание"></td></tr>
+ <tr><td>Двигатели и их крепление</td><td class="checkcell"><input type="radio" name="c3"></td><td class="checkcell"><input type="radio" name="c3"></td><td class="checkcell"><input type="radio" name="c3"></td><td><input aria-label="Двигатели, примечание"></td></tr>
+ <tr><td>Электропроводка и разъёмы</td><td class="checkcell"><input type="radio" name="c4"></td><td class="checkcell"><input type="radio" name="c4"></td><td class="checkcell"><input type="radio" name="c4"></td><td><input aria-label="Провода, примечание"></td></tr>
+ <tr><td>Защита винтов, шасси, крепёж</td><td class="checkcell"><input type="radio" name="c5"></td><td class="checkcell"><input type="radio" name="c5"></td><td class="checkcell"><input type="radio" name="c5"></td><td><input aria-label="Защита, примечание"></td></tr>
+ <tr><td>АКБ (только внешний осмотр)</td><td class="checkcell"><input type="radio" name="c6"></td><td class="checkcell"><input type="radio" name="c6"></td><td class="checkcell"><input type="radio" name="c6"></td><td><input aria-label="АКБ, примечание"></td></tr>
+ <tr><td>Комплектность и документация</td><td class="checkcell"><input type="radio" name="c7"></td><td class="checkcell"><input type="radio" name="c7"></td><td class="checkcell"><input type="radio" name="c7"></td><td><input aria-label="Документация, примечание"></td></tr>
+ </tbody></table>
+ <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>02 / 06</span></div>
+</section>
+
+<section class="page" id="page3">
+ <div class="topmark">Классификация и учебный кейс</div>
+ <h2>7. Как оценивать обнаруженные признаки</h2>
+ <table><thead><tr><th style="width:12%">Код</th><th style="width:24%">Уровень</th><th>Смысл и действие</th></tr></thead><tbody>
+ <tr><td><span class="tag red">К</span></td><td><b>Критический</b></td><td>Возможна непосредственная угроза безопасной эксплуатации (например, трещина винта, опасное повреждение АКБ). <b>Запрет эксплуатации</b>, передать специалисту.</td></tr>
+ <tr><td><span class="tag amber">З</span></td><td><b>Значительный</b></td><td>Нарушена надёжность или крепление; необходимо устранение <b>до полёта</b> и последующая проверка.</td></tr>
+ <tr><td><span class="tag green">Н</span></td><td><b>Незначительный</b></td><td>Отдельное отклонение, не влияющее очевидно на безопасность, но требующее регистрации и контроля. Допустимость определяют по инструкции изготовителя.</td></tr>
+ <tr><td><span class="tag">НП</span></td><td><b>Не проверено</b></td><td>Недостаточно данных для заключения. <b>Не считать исправным автоматически</b>; назначить дополнительную проверку.</td></tr>
+ </tbody></table>
+ <div class="small">Указанные коды являются <b>учебной классификацией</b> для этой работы, а не официальной классификацией изготовителя или нормативным допуском к полётам.</div>
+ <h2>8. Учебный кейс (вариант Б)</h2>
+ <p>Условный учебный квадрокоптер после транспортировки находится на столе, питание отключено. Преподаватель передал следующие результаты <b>внешнего осмотра</b>. Определите, какие записи отражают дефекты, какие — исправное состояние, а какие требуют дополнительной проверки.</p>
+ <div class="casegrid">
+  <div class="case"><b>Б-01 · Винт № 2</b><p>Возле ступицы видна трещина длиной примерно 4 мм.</p></div>
+  <div class="case"><b>Б-02 · Рама</b><p>Есть небольшие поверхностные царапины; трещины и деформация не замечены.</p></div>
+  <div class="case"><b>Б-03 · Шасси</b><p>Один винт крепления посадочной опоры отсутствует, опора заметно люфтит.</p></div>
+  <div class="case"><b>Б-04 · АКБ</b><p>Корпус аккумуляторной батареи имеет заметное вздутие.</p></div>
+  <div class="case"><b>Б-05 · Разъём питания</b><p>На контактах видны потемнение и признаки перегрева.</p></div>
+  <div class="case"><b>Б-06 · Провод мотора № 3</b><p>Провод прижат к острой кромке рамы; изоляция пока целая.</p></div>
+  <div class="case"><b>Б-07 · Защита винтов</b><p>Все элементы ограждения закреплены, внешних повреждений не выявлено.</p></div>
+  <div class="case"><b>Б-08 · Радиоканал</b><p>Проверка связи не выполнялась. Сведений о её результате нет.</p></div>
+ </div>
+ <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>03 / 06</span></div>
+</section>
+
+<section class="page" id="page4">
+ <div class="topmark">Оценка наблюдений и критерии проверки</div>
+ <h2>9. Первичная оценка наблюдений</h2>
+ <table><thead><tr><th style="width:16%">Наблюдение</th><th style="width:25%">Статус</th><th style="width:20%">Уровень*</th><th>Почему принято такое решение?</th></tr></thead><tbody>
+ <tr><td>Б-01</td><td><select aria-label="Статус Б-01"><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-02</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-03</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-04</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-05</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-06</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-07</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ <tr><td>Б-08</td><td><select><option value=""></option><option>Дефект</option><option>Исправно</option><option>НП</option></select></td><td><select><option value=""></option><option>К</option><option>З</option><option>Н</option><option>—</option></select></td><td><input></td></tr>
+ </tbody></table>
+ <div class="small">* Для исправного состояния или «НП» ставьте «—». Для варианта А заполните эту таблицу только при дополнительном разборе кейса по указанию преподавателя.</div>
+
+ <div class="panel blue" style="margin-top:19px"><b>Перед оформлением ведомости:</b> отделите доказанные дефекты от исправных элементов и от результатов, которые пока не проверены. В ведомость вносите именно выявленные дефекты. Непроведённые проверки перечислите отдельно на странице 5.</div>
+ <h2>10. Критерии оценивания</h2>
+ <table><thead><tr><th>Критерий</th><th style="width:15%">Максимум</th><th style="width:17%">Балл</th></tr></thead><tbody>
+ <tr><td>Соблюдение требований безопасности и последовательности осмотра</td><td>3</td><td></td></tr>
+ <tr><td>Полнота и логичность контрольного листа</td><td>4</td><td></td></tr>
+ <tr><td>Правильное выделение дефектов и оценка значимости</td><td>5</td><td></td></tr>
+ <tr><td>Точность и полнота заполнения дефектной ведомости</td><td>5</td><td></td></tr>
+ <tr><td>Обоснование заключения и контрольные вопросы</td><td>3</td><td></td></tr>
+ <tr><th>ИТОГО</th><th>20</th><th></th></tr>
+ </tbody></table>
+ <div class="small">Ориентир: 18–20 — «отлично»; 15–17 — «хорошо»; 12–14 — «удовлетворительно»; менее 12 — «неудовлетворительно». Преподаватель может использовать баллы в рамках действующей БРС курса.</div>
+
+ <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>04 / 06</span></div>
+</section>
+
+<section class="page" id="page5">
+ <div class="topmark">Основной отчётный документ</div>
+ <h2>11. Дефектная ведомость № <input class="input" style="width:85px;display:inline-flex;flex:none" placeholder="____"></h2>
+ <div class="lines" style="margin-top:3px">
+ <div class="field"><label>Объект</label><input class="input" placeholder="Модель / учебный кейс"></div>
+ <div class="field"><label>Дата осмотра</label><input class="input" type="date"></div>
+ <div class="field"><label>Идентификатор</label><input class="input" placeholder="Инвентарный № / Б"></div>
+ <div class="field"><label>Осмотр выполнил</label><input class="input" placeholder="Ф. И. О."></div>
+ </div>
+ <div class="soft" style="margin:13px 0"><b>Задание:</b> внесите сюда все обнаруженные дефекты. Каждый дефект — отдельная строка. Указывайте <b>узел, наблюдаемый признак, код серьёзности, рекомендуемое действие</b>. Не путайте предложение по ремонту с фактом уже выполненного ремонта. При варианте Б запишите минимум 4 значимых дефекта; при варианте А — все фактически выявленные (если дефектов нет, поставьте прочерк и напишите это в заключении).</div>
+ <table class="defect-table" id="defecttable">
+ <thead><tr><th style="width:7%">№</th><th style="width:19%">Узел / позиция</th><th style="width:30%">Описание дефекта и признак</th><th style="width:12%">К / З / Н</th><th style="width:32%">Рекомендуемое действие / контроль после устранения</th></tr></thead>
+ <tbody>
+ <tr><td>1</td><td><textarea aria-label="Узел 1"></textarea></td><td><textarea aria-label="Дефект 1"></textarea></td><td><select aria-label="Код 1"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 1"></textarea></td></tr>
+ <tr><td>2</td><td><textarea aria-label="Узел 2"></textarea></td><td><textarea aria-label="Дефект 2"></textarea></td><td><select aria-label="Код 2"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 2"></textarea></td></tr>
+ <tr><td>3</td><td><textarea aria-label="Узел 3"></textarea></td><td><textarea aria-label="Дефект 3"></textarea></td><td><select aria-label="Код 3"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 3"></textarea></td></tr>
+ <tr><td>4</td><td><textarea aria-label="Узел 4"></textarea></td><td><textarea aria-label="Дефект 4"></textarea></td><td><select aria-label="Код 4"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 4"></textarea></td></tr>
+ <tr><td>5</td><td><textarea aria-label="Узел 5"></textarea></td><td><textarea aria-label="Дефект 5"></textarea></td><td><select aria-label="Код 5"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 5"></textarea></td></tr>
+ <tr><td>6</td><td><textarea aria-label="Узел 6"></textarea></td><td><textarea aria-label="Дефект 6"></textarea></td><td><select aria-label="Код 6"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие 6"></textarea></td></tr>
+ </tbody></table>
+ <button class="noprint" style="background:#dbe9fa;color:#214d83;border:1px solid #aac3e5" onclick="addRow()">+ Добавить строку ведомости</button>
+ <div class="two" style="margin-top:12px">
+  <div class="field"><label>Число дефектов</label><input class="input" type="number" min="0" placeholder="0"></div>
+  <div class="field"><label>Из них критических</label><input class="input" type="number" min="0" placeholder="0"></div>
+ </div>
+ <h3>Дополнительные проверки, которые необходимы, но здесь не проводились</h3>
+ <textarea class="boxwrite" style="min-height:72px" placeholder="Укажите узел, цель проверки и кто должен её выполнить; если не требуются — обоснуйте."></textarea>
+ <div class="panel warn" style="margin-top:10px"><b>Важно:</b> заполнение дефектной ведомости не является актом ремонта и не подтверждает летную годность. Разрешение на эксплуатацию требует устранения опасных дефектов и проверки согласно документации изготовителя ответственным лицом.</div>
+ <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>05 / 06</span></div>
+</section>
+
+<section class="page" id="page6">
+ <div class="topmark">Заключение и сдача</div>
+ <h2>12. Техническое заключение</h2>
+ <p><b>По результатам осмотра установлено:</b></p>
+ <textarea class="boxwrite" style="min-height:92px" placeholder="Кратко перечислите ключевые дефекты и объясните, почему они влияют на безопасность и исправность БВС."></textarea>
+ <h3>Предварительное решение по результатам дефектовки</h3>
+ <div class="verdicts">
+ <label class="verdict"><input type="radio" name="verdict"><span><b>Не допускать к эксплуатации</b><br>До устранения неисправностей и контрольной проверки.</span></label>
+ <label class="verdict"><input type="radio" name="verdict"><span><b>Требуется дополнительная диагностика</b><br>Данных недостаточно для заключения.</span></label>
+ <label class="verdict"><input type="radio" name="verdict"><span><b>Признаков дефектов не выявлено</b><br>Это не заменяет штатный предполётный контроль и допуск.</span></label>
+ </div>
+ <p><b>Обоснование решения:</b></p>
+ <textarea class="boxwrite" style="min-height:67px" placeholder="Укажите решающие признаки и какие действия должны предшествовать следующему полёту."></textarea>
+ <div class="lines" style="margin-top:9px"><div class="field"><label>Подпись студента</label><input class="input"></div><div class="field"><label>Проверил (преподаватель)</label><input class="input"></div></div>
+ <h2>13. Контрольные вопросы</h2>
+ <div class="question"><b>1.</b> Чем дефектовка отличается от ремонта? Почему обнаруженный дефект не следует сразу исправлять без согласования?</div>
+ <textarea class="writing-line" rows="2" aria-label="Ответ 1"></textarea>
+ <div class="question"><b>2.</b> Почему БВС с повреждённым винтом или вздутой АКБ нельзя проверять включением двигателей?</div>
+ <textarea class="writing-line" rows="2" aria-label="Ответ 2"></textarea>
+ <div class="question"><b>3.</b> Что следует проверить и задокументировать после устранения выявленных дефектов, прежде чем решать вопрос о допуске к эксплуатации?</div>
+ <textarea class="writing-line" rows="2" aria-label="Ответ 3"></textarea>
+ <div class="panel blue" style="padding:10px 12px;margin-top:10px"><b>Что сдавать в Moodle:</b> один PDF, содержащий заполненные титульные поля, контрольный лист (стр. 2), оценку наблюдений при варианте Б (стр. 4), дефектную ведомость (стр. 5), заключение и ответы на вопросы (стр. 6). Название файла: <b>Группа_Фамилия_ДефектовкаБАС.pdf</b>.</div>
+ <div class="small" style="margin-top:10px">Справочные материалы: <a href="https://docs.geoscan.ru/pioneer/">документация «Геоскан Пионер»</a>; <a href="https://www.faa.gov/uas">материалы FAA по безопасности БАС</a>. При реальном осмотре первичны инструкция изготовителя, действующие процедуры организации и указания преподавателя.</div>
+ <div class="footer"><span>ТОиР БАС • Практическая работа № 1</span><span>06 / 06</span></div>
+</section>
+
+<script>
+function addRow(){
+ const body=document.querySelector('#defecttable tbody');
+ const n=body.rows.length+1;
+ const row=document.createElement('tr');
+ row.innerHTML=`<td>${n}</td><td><textarea aria-label="Узел ${n}"></textarea></td><td><textarea aria-label="Дефект ${n}"></textarea></td><td><select aria-label="Код ${n}"><option value=""></option><option>К</option><option>З</option><option>Н</option></select></td><td><textarea aria-label="Действие ${n}"></textarea></td>`;
+ body.appendChild(row);
+}
+function downloadFilled(){
+ const clone=document.documentElement.cloneNode(true);
+ const live=document.querySelectorAll('input,textarea,select');
+ const saved=clone.querySelectorAll('input,textarea,select');
+ live.forEach((el,i)=>{
+  let target=saved[i];if(!target)return;
+  if(el.tagName==='TEXTAREA'){target.textContent=el.value;}
+  else if(el.tagName==='SELECT'){
+    [...target.options].forEach((o,k)=>{if(k===el.selectedIndex)o.setAttribute('selected','');else o.removeAttribute('selected')})
+  }else if(el.type==='checkbox'||el.type==='radio'){
+    if(el.checked)target.setAttribute('checked','');else target.removeAttribute('checked')
+  }else{target.setAttribute('value',el.value)}
+ });
+ // Added rows exist in cloned page; their current fields are captured above.
+ const blob=new Blob(['\ufeff<!DOCTYPE html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ТОиР_БАС_дефектовка_заполнено.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function resetFields(){if(!confirm('Удалить все ответы из открытой формы?'))return;document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.type==='checkbox'||el.type==='radio')el.checked=false;else if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';})}
+// Expand handwritten answers during printing so they do not get clipped.
+let printHeights=[];
+window.addEventListener('beforeprint',()=>{printHeights=[];document.querySelectorAll('textarea').forEach(el=>{printHeights.push([el,el.style.height]);if(el.value.trim()){el.style.height=Math.max(el.scrollHeight,el.offsetHeight)+'px';}})});
+window.addEventListener('afterprint',()=>{printHeights.forEach(([el,h])=>{el.style.height=h})});
+</script>
+</body></html>

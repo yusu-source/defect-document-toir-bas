@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Практическая работа №1 — Состав и архитектура БАС</title>
+<style>
+:root{--ink:#14283d;--text:#203146;--muted:#5f7182;--teal:#087f78;--light:#eaf6f4;--line:#d9e3e9;--bg:#edf2f5;--card:#fff;--gold:#bd7d24;--danger:#ab4e4e}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.toolbar{position:sticky;z-index:40;top:0;background:rgba(255,255,255,.97);border-bottom:1px solid #dce5eb;box-shadow:0 6px 25px #122d4820;backdrop-filter:blur(10px)}
+.toolbar-inner{max-width:1190px;margin:auto;padding:10px 20px;display:flex;align-items:center;gap:14px;justify-content:space-between}
+.app-id{display:flex;align-items:center;gap:11px;min-width:230px}.mark{width:33px;height:33px;border-radius:10px;background:#0f807c;color:white;display:grid;place-items:center;font-size:19px;font-weight:800;flex:none}.app-id strong{display:block;font-size:13px;line-height:1.15}.app-id span{font-size:11px;color:var(--muted)}
+.tools{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+.btn{border:1px solid #cbd9e0;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:700;color:var(--ink);background:#fff;white-space:nowrap;transition:background .15s}
+.btn:hover{background:#f0f7f7}.btn.primary{color:#fff;background:var(--teal);border-color:var(--teal)}.btn.primary:hover{background:#096c67}.btn.danger{color:#a34343;border-color:#e2c3c3}
+.btn.small{padding:6px 8px;font-size:11px}.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #0c8c8a;outline-offset:2px}
+.status{font-size:11px;color:#57736a;white-space:nowrap}.status.warn{color:#9a6231}
+.intro-banner{max-width:860px;margin:18px auto 0;padding:12px 18px;border-radius:11px;background:#e8f4f0;color:#285a54;border:1px solid #cbe2dd;font-size:12px;display:flex;align-items:start;gap:10px}
+.document{padding:17px 16px 50px;display:flex;flex-direction:column;gap:20px;align-items:center}
+.sheet{width:210mm;min-height:297mm;max-width:100%;background:var(--card);box-shadow:0 12px 40px #24405b1c;border-radius:4px;padding:13mm 14mm;position:relative;overflow:hidden}
+.page-number{position:absolute;bottom:9mm;left:14mm;right:14mm;border-top:1px solid var(--line);display:flex;justify-content:space-between;padding-top:5px;font-size:9px;color:#718293;letter-spacing:.03em}
+.kicker{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--teal);text-transform:uppercase}
+h1{font-size:25px;letter-spacing:-.035em;line-height:1.13;color:var(--ink);margin:7px 0 5px}
+h2{font-size:18px;line-height:1.2;letter-spacing:-.02em;color:var(--ink);margin:0}
+h3{font-size:13px;line-height:1.2;color:var(--ink);margin:0}
+p{margin:5px 0 8px}.subtitle{font-size:12px;color:#617789}.note{font-size:11.5px;color:#597184}.small{font-size:11px}
+.hero{border-bottom:2px solid #0d817e;padding-bottom:13px;margin-bottom:13px}
+.hero-bottom{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.chip{border:1px solid #d4e4e6;border-radius:30px;padding:3px 8px;background:#f4f9f8;font-size:10px;font-weight:800;color:#32615e}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 13px;margin:9px 0 12px}
+.meta-grid .wide{grid-column:1/-1}
+.field-label{display:block;font-size:10px;font-weight:700;color:#536b7e;margin:0 0 4px}
+.field{width:100%;border:1px solid #d0dce2;border-radius:6px;background:#fbfdfe;padding:7px 9px;color:#142c3e;min-height:32px;resize:vertical;font-size:12px}
+.field::placeholder{color:#a5b1bb}.field:focus{background:#fff}
+textarea.field{line-height:1.45;min-height:42px}
+.print-answer{display:none}
+.section{margin:14px 0 0}.section-head{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.letter{width:26px;height:26px;border-radius:7px;background:var(--ink);display:grid;place-items:center;color:white;font-size:12px;font-weight:800;flex:none}
+.point{margin-left:auto;white-space:nowrap;border-radius:20px;padding:3px 9px;background:#e8f4f2;color:#086d68;font-weight:800;font-size:10px}
+.prompt{margin:3px 0 8px;font-size:11.5px;color:#52687c}
+.table-wrap{border-radius:8px;border:1px solid #d7e2e8;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{background:#f1f6f8;color:#3a5669;font-size:10px;text-align:left;padding:8px;border-bottom:1px solid #dce5e9}
+td{border-bottom:1px solid #e0e8ed;padding:5px 7px;vertical-align:middle;font-size:11px}
+tr:last-child td{border-bottom:none}
+td .field{margin:0;min-height:34px;padding:6px 7px;font-size:11px}td textarea.field{resize:vertical}
+.essay{margin:9px 0}.essay .field{min-height:52px}
+.callout{background:#f1f8f8;border-left:3px solid #168a84;border-radius:0 6px 6px 0;padding:9px 11px;font-size:11.5px;color:#365d63}
+.callout.warning{background:#fff9ee;border-color:#d5a453;color:#755a35}
+.step-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 0 9px}.step-grid div{border:1px solid #e1e8ed;border-radius:5px;text-align:center;padding:5px 3px;font-size:10px;color:#547082}.step-grid strong{display:block;color:#174052;font-size:11px}
+.divider{height:1px;background:#e2eaef;margin:11px 0}
+/* Diagram editor */
+.diagram-control{border:1px solid #d2e0e6;border-radius:10px;background:#f5fafb;padding:11px;margin-top:10px}
+.diagram-control-header{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#5a7883;margin:0 0 6px}
+.control-row{display:flex;flex-wrap:wrap;gap:7px;align-items:end;margin-bottom:9px}
+.control-row:last-child{margin-bottom:0}
+.control-block{flex:1;min-width:140px}
+.control-block.narrow{flex:0 1 120px;min-width:105px}
+.control-block select,.control-block input{width:100%;min-width:0;border:1px solid #ccdae0;border-radius:7px;background:white;font-size:11px;padding:7px;height:33px;color:var(--ink)}
+.editor-tip{font-size:11px;color:#63798b;margin:5px 0 6px}
+.diagram-frame{position:relative;border:1px solid #c8dce0;background:white;border-radius:9px;overflow:hidden;margin:9px 0}
+#architecture{display:block;width:100%;height:auto;touch-action:none;user-select:none;cursor:default}
+#architecture [data-node-id]{cursor:grab}#architecture [data-node-id]:active{cursor:grabbing}
+#architecture text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.edge-list{font-size:11px;display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.edge-pill{display:flex;align-items:center;gap:5px;background:#f0f5f8;border:1px solid #dee9ec;border-radius:30px;padding:4px 6px 4px 10px;color:#4d6676;max-width:100%}.edge-pill button{font-size:12px;line-height:1;background:transparent;border:0;color:#9c3e3e;padding:1px 4px}
+#edgeEmpty{font-size:11px;color:#708493;padding:4px 0}
+.diagram-note{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}
+.legend{display:flex;flex-wrap:wrap;gap:9px;font-size:10px;margin-top:7px;color:#526d7d}.lg{display:flex;align-items:center;gap:5px}.swatch{display:inline-block;width:18px;border-top:2px solid #274758}.swatch.power{border-top:3px solid #ae772d}.swatch.data{border-top:2px dashed #60799c}.swatch.video{border-top:2px dotted #a35789}
+.inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mission-panel{background:#f5faf9;border:1px solid #d9e8e4;border-radius:7px;padding:8px 10px;font-size:11px;color:#4f6c6b;min-height:43px;margin-top:8px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px 11px;margin:8px 0}.checks label{display:flex;gap:7px;align-items:flex-start;font-size:10.5px;color:#496373;cursor:pointer}.checks input{accent-color:#0d7f79;margin-top:2px}
+.scoring{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px}.score{border:1px solid #d8e4e9;background:#f5f9fa;padding:7px 3px;text-align:center;border-radius:5px;font-size:10px;color:#597087}.score strong{display:block;font-size:13px;color:#183b4e}
+.assistive{position:absolute;width:1px;height:1px;clip:rect(0 0 0 0);overflow:hidden;white-space:nowrap}
+.toast{position:fixed;bottom:18px;right:18px;background:#183c4d;color:#fff;padding:10px 13px;border-radius:8px;font-size:12px;box-shadow:0 8px 30px #0003;max-width:360px;z-index:50;display:none}
+@media(max-width:850px){.sheet{width:100%;min-height:0;padding:20px 16px 56px}.page-number{bottom:12px;left:16px;right:16px}.document{padding:12px 7px 40px;gap:12px}.intro-banner{margin:10px 10px 0}.toolbar-inner{padding:8px 12px;flex-wrap:wrap}.app-id{min-width:0}.tools{justify-content:start}.step-grid{grid-template-columns:repeat(2,1fr)}h1{font-size:22px}}
+@media(max-width:600px){.meta-grid,.inline-fields,.diagram-note{grid-template-columns:1fr}.checks{grid-template-columns:1fr}.scoring{grid-template-columns:repeat(5,1fr)}.toolbar-inner{display:block}.tools{margin-top:7px;gap:5px}.btn{padding:7px 8px}.status{display:none}.table-wrap{overflow-x:auto}th,td{padding:5px}.document{padding-left:0;padding-right:0}.sheet{border-radius:0}h1{font-size:19px}}
+/* The printable copy uses mirrors rather than textarea to avoid browser clipping of multiline answers. */
+@page{size:A4 portrait;margin:0}
+@media print{
+html,body{width:210mm;background:#fff;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color:#152a3b}
+.toolbar,.intro-banner,.diagram-control,.editor-tip,.edge-list,#edgeEmpty,.noprint,.toast{display:none!important}
+.document{display:block;padding:0;margin:0}
+.sheet{box-shadow:none;border-radius:0;width:210mm;max-width:none;min-height:297mm;height:297mm;padding:11mm 13mm 14mm;margin:0;overflow:visible;break-after:page;page-break-after:always}
+.sheet:last-child{break-after:auto;page-break-after:auto}
+.page-number{left:13mm;right:13mm;bottom:7mm}
+.hero{margin-bottom:7px;padding-bottom:8px}h1{font-size:21px}h2{font-size:16px}.section{margin-top:11px}.meta-grid{margin:7px 0 10px;gap:6px 10px}
+.section-head{margin-bottom:3px}.prompt{margin:2px 0 6px;font-size:10.5px}
+.field{display:none!important}.print-answer{display:block;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.35;color:#132b3b;min-height:20px;padding:4px 5px;border-bottom:1px solid #c7d6df}
+.print-answer.empty{color:#b1bac0}
+.table-wrap .print-answer{font-size:10px;min-height:23px;border:0;padding:3px 0}
+.field-label{font-size:9.5px;margin:0 0 2px}
+.table-wrap th{padding:5px 7px}.table-wrap td{padding:3px 7px}
+.callout{padding:7px 9px;font-size:10px}
+.step-grid{margin:4px 0 7px}.step-grid div{padding:4px;font-size:9px}
+.essay{margin:6px 0}.essay .print-answer{min-height:30px}
+#architecture{max-height:120mm} .diagram-frame{margin:7px 0}
+.diagram-note{margin-top:7px}.legend{margin-top:5px}.mission-panel{font-size:10px;margin-top:5px;padding:6px 8px;min-height:30px}
+.checks{margin:6px 0}.scoring{margin-top:6px}.score{padding:4px 2px}.score strong{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="toolbar noprint">
+  <div class="toolbar-inner">
+    <div class="app-id"><div class="mark" aria-hidden="true">✣</div><div><strong>Практическая работа №1</strong><span>Интерактивный рабочий лист · БАС</span></div></div>
+    <div class="tools">
+      <span id="saveStatus" class="status" role="status">Подготовка…</span>
+      <button type="button" class="btn" id="newSheetBtn" title="Очистить все ответы для новой команды">↺ Новый бланк</button>
+      <button type="button" class="btn" id="saveJsonBtn" title="Сохранить ответы и схему для продолжения работы позже">↓ Сохранить ответы</button>
+      <button type="button" class="btn" id="loadJsonBtn" title="Восстановить ответы из файла JSON">↑ Загрузить ответы</button>
+      <button type="button" class="btn primary" id="printBtn">⎙ Сохранить в PDF</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="loadJsonFile" accept=".json,application/json" hidden>
+<div class="intro-banner noprint">
+  <span aria-hidden="true">ⓘ</span>
+  <div>Заполняйте поля прямо в браузере. Ответы автоматически сохраняются на этом устройстве (если браузер разрешает локальное хранение). Чтобы не потерять работу, периодически нажимайте «Сохранить ответы». Для сдачи нажмите <b>«Сохранить в PDF» → «Сохранить как PDF»</b> в диалоге печати и загрузите файл в Moodle. Интернет не требуется.</div>
+</div>
+<main class="document">
+  <!-- PAGE 1 -->
+  <article class="sheet" id="page-1">
+    <header class="hero">
+      <div class="kicker">Тема 1 · Введение в беспилотные авиационные системы</div>
+      <h1>Состав и архитектура БАС</h1>
+      <div class="subtitle">Практическая работа №1 · Исследование реальных образцов</div>
+      <div class="hero-bottom"><span class="chip">Команда 2–4 человека</span><span class="chip">90 минут</span><span class="chip">Максимум 7 баллов</span></div>
+    </header>
+    <div class="meta-grid">
+      <div><label for="group" class="field-label">Учебная группа</label><input id="group" class="field" placeholder="Например, ИВТ-101" autocomplete="off"><div class="print-answer" data-mirror="group"></div></div>
+      <div><label for="date" class="field-label">Дата выполнения</label><input id="date" class="field" type="date"><div class="print-answer" data-mirror="date"></div></div>
+      <div class="wide"><label for="members" class="field-label">Участники команды (ФИО)</label><input id="members" class="field" placeholder="Укажите имена всех участников" autocomplete="off"><div class="print-answer" data-mirror="members"></div></div>
+    </div>
+    <div class="callout"><b>Инженерная задача:</b> исследуйте четыре экспоната БВС, найдите основные узлы, объясните их назначение и постройте архитектуру одной беспилотной авиационной системы, включая наземный сегмент.</div>
+    <div class="step-grid" aria-label="Маршрут работы"><div><strong>01 · Осмотрите</strong>4 станции</div><div><strong>02 · Определите</strong>6 компонентов</div><div><strong>03 · Постройте</strong>схему БАС</div><div><strong>04 · Сравните</strong>и выберите</div></div>
+    <p class="small" style="margin:4px 0 0;color:#95662c"><b>Безопасность:</b> не подключайте аккумуляторы, не включайте двигатели и пульты, не отсоединяйте провода или узлы без разрешения преподавателя.</p>
+
+    <section class="section" aria-labelledby="a-title">
+      <div class="section-head"><span class="letter">А</span><h2 id="a-title">Паспорт четырёх экспонатов</h2><span class="point">1 балл</span></div>
+      <p class="prompt">Определите компоновку каждого образца и зафиксируйте один признак, который вы действительно увидели. FPV — способ пилотирования по видео, а не аэродинамический тип БВС.</p>
+      <div class="table-wrap"><table><thead><tr><th style="width:29%">Экспонат</th><th style="width:28%">Тип / компоновка</th><th>Что видно при осмотре</th></tr></thead><tbody>
+        <tr><td><b>1.</b> «Пионер» собранный</td><td><textarea id="a1type" class="field" rows="1" placeholder="Тип БВС"></textarea><div class="print-answer" data-mirror="a1type"></div></td><td><textarea id="a1sign" class="field" rows="1" placeholder="Наблюдаемый признак"></textarea><div class="print-answer" data-mirror="a1sign"></div></td></tr>
+        <tr><td><b>2.</b> «Пионер» разобранный</td><td><textarea id="a2type" class="field" rows="1" placeholder="Тип БВС"></textarea><div class="print-answer" data-mirror="a2type"></div></td><td><textarea id="a2sign" class="field" rows="1" placeholder="Наблюдаемый признак"></textarea><div class="print-answer" data-mirror="a2sign"></div></td></tr>
+        <tr><td><b>3.</b> Самодельный самолёт</td><td><textarea id="a3type" class="field" rows="1" placeholder="Тип БВС"></textarea><div class="print-answer" data-mirror="a3type"></div></td><td><textarea id="a3sign" class="field" rows="1" placeholder="Наблюдаемый признак"></textarea><div class="print-answer" data-mirror="a3sign"></div></td></tr>
+        <tr><td><b>4.</b> FPV-дрон</td><td><textarea id="a4type" class="field" rows="1" placeholder="Укажите конструкцию"></textarea><div class="print-answer" data-mirror="a4type"></div></td><td><textarea id="a4sign" class="field" rows="1" placeholder="Наблюдаемый признак"></textarea><div class="print-answer" data-mirror="a4sign"></div></td></tr>
+      </tbody></table></div>
+    </section>
+    <section class="section" aria-labelledby="b-title">
+      <div class="section-head"><span class="letter">Б</span><h2 id="b-title">Из чего состоит «Геоскан Пионер»</h2><span class="point">2 балла</span></div>
+      <p class="prompt">Найдите у разобранного «Пионера» <b>шесть различимых узлов</b> и объясните их функции. Не указывайте то, чего не наблюдали. Если вы не уверены — отметьте «предположительно».</p>
+      <div class="table-wrap"><table><thead><tr><th style="width:8%">№</th><th style="width:38%">Компонент / узел</th><th>Для чего нужен</th></tr></thead><tbody>
+        <tr><td>1</td><td><textarea id="b1name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b1name"></div></td><td><textarea id="b1func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b1func"></div></td></tr>
+        <tr><td>2</td><td><textarea id="b2name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b2name"></div></td><td><textarea id="b2func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b2func"></div></td></tr>
+        <tr><td>3</td><td><textarea id="b3name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b3name"></div></td><td><textarea id="b3func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b3func"></div></td></tr>
+        <tr><td>4</td><td><textarea id="b4name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b4name"></div></td><td><textarea id="b4func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b4func"></div></td></tr>
+        <tr><td>5</td><td><textarea id="b5name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b5name"></div></td><td><textarea id="b5func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b5func"></div></td></tr>
+        <tr><td>6</td><td><textarea id="b6name" class="field" rows="1" placeholder="Название узла"></textarea><div class="print-answer" data-mirror="b6name"></div></td><td><textarea id="b6func" class="field" rows="1" placeholder="Функция"></textarea><div class="print-answer" data-mirror="b6func"></div></td></tr>
+      </tbody></table></div>
+      <p class="note" style="margin-top:5px">Подсказка: интегрированный узел допустимо назвать «плата управления / встроенные датчики», указав его предполагаемую функцию.</p>
+    </section>
+    <div class="page-number"><span>ЮГУ · Введение в БАС</span><span>Лист 1 / 3</span></div>
+  </article>
+
+  <!-- PAGE 2 -->
+  <article class="sheet" id="page-2">
+    <div class="kicker">Инженерная схема · рабочий лист</div>
+    <div class="section-head" style="margin-top:8px"><span class="letter">В</span><h2>Архитектура одной беспилотной авиационной системы</h2><span class="point">2 балла</span></div>
+    <p class="prompt">Выберите один аппарат и нарисуйте его <b>структурную схему</b>: наземный и воздушный сегменты, не менее шести функциональных блоков (при наличии) и три корректные связи — управление, питание и данные/видео по необходимости.</p>
+    <div class="meta-grid" style="grid-template-columns:1fr 1fr;margin-bottom:5px">
+      <div><label for="aircraft" class="field-label">Выбранный аппарат</label><select id="aircraft" class="field"><option value="">— Выберите —</option><option value="Геоскан Пионер">Геоскан Пионер</option><option value="FPV-дрон">FPV-дрон</option><option value="Самолётный БПЛА">Самолётный БПЛА</option></select><div class="print-answer" data-mirror="aircraft"></div></div>
+      <div><label for="config" class="field-label">Особенности комплектации (при необходимости)</label><input id="config" class="field" placeholder="Например, камера установлена отдельно"><div class="print-answer" data-mirror="config"></div></div>
+    </div>
+    <div class="diagram-control noprint" aria-label="Редактор структурной схемы">
+      <div class="diagram-control-header">Шаг 1 · Добавить компоненты</div>
+      <div class="control-row"><div class="control-block"><label class="field-label" for="nodePreset">Функциональный блок</label><select id="nodePreset"><option value="">— Выберите узел —</option><optgroup label="Воздушный сегмент"><option>Рама / фюзеляж</option><option>Аккумулятор</option><option>Плата питания / BEC</option><option>Полётный контроллер</option><option>Встроенные датчики</option><option>GNSS-приёмник</option><option>Приёмник команд</option><option>ESC / регулятор</option><option>Электродвигатели</option><option>Воздушные винты</option><option>Сервоприводы</option><option>Рулевые поверхности</option><option>Камера</option><option>Видеопередатчик</option><option>Телеметрийный модуль</option><option>Запись данных</option><option>Крыло</option></optgroup><optgroup label="Наземный сегмент"><option>Пульт оператора</option><option>Наземная станция</option><option>Видеоприёмник / очки</option></optgroup><option value="__custom">Свой компонент…</option></select></div><div class="control-block narrow"><label class="field-label" for="nodeSegment">Размещение</label><select id="nodeSegment"><option value="air">На борту</option><option value="ground">На земле</option></select></div><button type="button" class="btn primary" id="addNode">+ Добавить блок</button></div>
+      <div class="diagram-control-header">Шаг 2 · Добавить связи между блоками</div>
+      <div class="control-row"><div class="control-block"><label for="fromNode" class="field-label">Откуда</label><select id="fromNode"><option value="">— Источник —</option></select></div><div class="control-block"><label for="toNode" class="field-label">Куда</label><select id="toNode"><option value="">— Получатель —</option></select></div><div class="control-block narrow"><label class="field-label" for="edgeType">Тип связи</label><select id="edgeType"><option value="У">У · Управление</option><option value="Э">Э · Питание</option><option value="Д">Д · Данные</option><option value="В">В · Видео</option></select></div><button type="button" class="btn" id="addEdge">↗ Провести связь</button></div>
+      <div class="diagram-control-header">Шаг 3 · Переместить блоки мышью или пальцем · нажать блок для изменения</div>
+      <div class="control-row"><div class="control-block"><label for="editNodeText" class="field-label">Выбранный блок</label><input id="editNodeText" placeholder="Нажмите на блок на схеме" disabled maxlength="60"></div><button type="button" class="btn small" id="renameNode" disabled>Переименовать</button><button type="button" class="btn danger small" id="deleteNode" disabled>Удалить блок</button><button type="button" class="btn danger small" id="clearDiagram">Очистить схему</button></div>
+    </div>
+    <p class="editor-tip noprint">Нажмите «Добавить блок», перетащите его в нужное место и соедините блоки через поля «Откуда → Куда». Можно добавлять свои названия, изменять и удалять связи.</p>
+    <div class="diagram-frame"><svg id="architecture" role="img" aria-label="Структурная схема беспилотной авиационной системы" viewBox="0 0 920 460" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arrowU" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#274758"/></marker><marker id="arrowE" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#ae772d"/></marker><marker id="arrowD" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#60799c"/></marker><marker id="arrowV" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#a35789"/></marker></defs>
+      <rect x="7" y="7" width="906" height="300" rx="10" fill="#f4fbfa" stroke="#b9d8d5" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <rect x="7" y="316" width="906" height="137" rx="10" fill="#f6f8fb" stroke="#bacbd9" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <text x="23" y="28" font-size="15" fill="#08726e" font-weight="800" letter-spacing=".5">НА БОРТУ · ВОЗДУШНЫЙ СЕГМЕНТ</text>
+      <text x="23" y="338" font-size="15" fill="#607a94" font-weight="800" letter-spacing=".5">НА ЗЕМЛЕ · НАЗЕМНЫЙ СЕГМЕНТ</text>
+      <g id="diagramEdges"></g><g id="diagramNodes"></g><g id="diagramEmpty"><text x="460" y="160" text-anchor="middle" font-size="17" fill="#99afad">Добавьте блоки в редакторе выше</text><text x="460" y="186" text-anchor="middle" font-size="12" fill="#99afad">Затем соедините их и покажите основные потоки</text></g>
+    </svg></div>
+    <div class="legend" aria-label="Условные обозначения"><span class="lg"><i class="swatch"></i><b>У</b> — управление</span><span class="lg"><i class="swatch power"></i><b>Э</b> — питание</span><span class="lg"><i class="swatch data"></i><b>Д</b> — данные</span><span class="lg"><i class="swatch video"></i><b>В</b> — видео</span></div>
+    <div id="edgeList" class="edge-list noprint"></div><div id="edgeEmpty" class="noprint">Связи ещё не добавлены.</div>
+    <div class="diagram-note">
+      <div><label for="architectureWhy" class="field-label">Почему вы выбрали именно эти блоки?</label><textarea id="architectureWhy" class="field" rows="3" placeholder="Поясните состав выбранной системы"></textarea><div class="print-answer" data-mirror="architectureWhy"></div></div>
+      <div><label for="architectureFlows" class="field-label">Какие основные потоки показаны на схеме?</label><textarea id="architectureFlows" class="field" rows="3" placeholder="Например: команды с пульта → радиоприёмник → контроллер"></textarea><div class="print-answer" data-mirror="architectureFlows"></div></div>
+    </div>
+    <div class="callout" style="margin-top:14px"><b>Проверка:</b> на схеме есть наземный сегмент; блоки соответствуют выбранному аппарату; стрелки подписаны. Не включайте оборудование, которого на образце нет, без пометки «предлагаемая доработка».</div>
+    <div class="page-number"><span>ЮГУ · Введение в БАС</span><span>Лист 2 / 3</span></div>
+  </article>
+
+  <!-- PAGE 3 -->
+  <article class="sheet" id="page-3">
+    <div class="kicker">Сравнение и инженерное решение</div>
+    <div class="section" aria-labelledby="g-title" style="margin-top:9px">
+      <div class="section-head"><span class="letter">Г</span><h2 id="g-title">Сравнение архитектур</h2><span class="point">1 балл</span></div>
+      <p class="prompt"><b>1.</b> Назовите два технических различия между самолётным БПЛА и квадрокоптером. Обратите внимание на создание подъёмной силы и управление движением.</p>
+      <div class="essay"><label class="field-label" for="diff1">Различие №1</label><textarea id="diff1" class="field" rows="2" placeholder="Ваш ответ"></textarea><div class="print-answer" data-mirror="diff1"></div></div>
+      <div class="essay"><label class="field-label" for="diff2">Различие №2</label><textarea id="diff2" class="field" rows="2" placeholder="Ваш ответ"></textarea><div class="print-answer" data-mirror="diff2"></div></div>
+      <p class="prompt"><b>2.</b> Чем управление по FPV-видео отличается от управления дроном, когда пилот наблюдает его непосредственно?</p>
+      <div class="essay"><textarea id="fpvDifference" aria-label="Отличия FPV-управления" class="field" rows="3" placeholder="Сравните способы получения визуальной информации и ориентации пилота"></textarea><div class="print-answer" data-mirror="fpvDifference"></div></div>
+    </div>
+    <section class="section" aria-labelledby="d-title">
+      <div class="section-head"><span class="letter">Д</span><h2 id="d-title">Инженерное решение</h2><span class="point">1 балл</span></div>
+      <p class="prompt">Получите карточку миссии М1, М2 или М3. Выберите подходящий образец и приведите два аргумента, включая возможную доработку или ограничение.</p>
+      <div class="inline-fields">
+        <div><label for="mission" class="field-label">Ваша миссия</label><select id="mission" class="field"><option value="">— Выберите миссию —</option><option value="М1">М1 — Осмотр крыши</option><option value="М2">М2 — Протяжённый маршрут</option><option value="М3">М3 — Полёт по камере</option></select><div class="print-answer" data-mirror="mission"></div></div>
+        <div><label for="chosenPlatform" class="field-label">Выбранная платформа</label><input id="chosenPlatform" class="field" placeholder="Тип или название БВС"><div class="print-answer" data-mirror="chosenPlatform"></div></div>
+      </div>
+      <div class="mission-panel" id="missionDescription">Выберите номер полученной от преподавателя карточки миссии — здесь появится условие.</div>
+      <div class="essay"><label for="reason1" class="field-label">Аргумент 1 — почему эта платформа подходит?</label><textarea id="reason1" class="field" rows="3" placeholder="Ваше инженерное обоснование"></textarea><div class="print-answer" data-mirror="reason1"></div></div>
+      <div class="essay"><label for="reason2" class="field-label">Аргумент 2 — ограничение или необходимая доработка</label><textarea id="reason2" class="field" rows="3" placeholder="Что нужно дополнить, изменить или учитывать?"></textarea><div class="print-answer" data-mirror="reason2"></div></div>
+    </section>
+    <section class="section" aria-labelledby="conclusion-title">
+      <div class="section-head"><span class="letter" style="background:#0e7772">✓</span><h2 id="conclusion-title">Вывод</h2></div>
+      <label for="conclusion" class="field-label">Чем беспилотная авиационная система (БАС) отличается от отдельного беспилотного воздушного судна (БВС)?</label>
+      <textarea id="conclusion" class="field" rows="3" placeholder="Сформулируйте различие своими словами"></textarea><div class="print-answer" data-mirror="conclusion"></div>
+    </section>
+    <div class="divider"></div>
+    <section aria-labelledby="check-title"><h3 id="check-title">Самопроверка перед сдачей</h3>
+      <div class="checks">
+        <label><input type="checkbox" id="check1"><span>Описаны все четыре экспоната</span></label>
+        <label><input type="checkbox" id="check2"><span>Определены шесть узлов «Пионера»</span></label>
+        <label><input type="checkbox" id="check3"><span>Есть схема с наземным сегментом</span></label>
+        <label><input type="checkbox" id="check4"><span>Показаны управление и питание</span></label>
+        <label><input type="checkbox" id="check5"><span>Есть сравнение архитектур</span></label>
+        <label><input type="checkbox" id="check6"><span>Обоснован выбор для миссии</span></label>
+      </div>
+    </section>
+    <div class="scoring"><div class="score">Задание А<strong>1 б.</strong></div><div class="score">Задание Б<strong>2 б.</strong></div><div class="score">Задание В<strong>2 б.</strong></div><div class="score">Задание Г<strong>1 б.</strong></div><div class="score">Задание Д<strong>1 б.</strong></div></div>
+    <p class="note" style="margin-top:8px">Итого: <b>7 баллов.</b> Для сдачи сохраните один PDF-файл с заполненными ответами и структурной схемой, затем прикрепите его в Moodle.</p>
+    <div class="page-number"><span>ЮГУ · Введение в БАС</span><span>Лист 3 / 3</span></div>
+  </article>
+</main>
+<div id="toast" role="status" class="toast"></div>
+<script>
+(() => {
+  'use strict';
+  const storageKey='yugu_bas_pr1_worksheet_v1';
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const fields=$$('input.field,textarea.field,select.field,input[type="checkbox"]');
+  const state={nodes:[],edges:[],counter:1};
+  const missionText={
+    'М1':'М1 · ОСМОТР КРЫШИ. Обследуйте небольшую крышу, получите фотографии с нескольких ракурсов; желательно зависать у элементов конструкции.',
+    'М2':'М2 · ПРОТЯЖЁННЫЙ МАРШРУТ. Выполните обзор вдоль условной длинной трассы; важна эффективность движения, зависание не требуется. Укажите доработку для получения изображений.',
+    'М3':'М3 · ПОЛЁТ ПО КАМЕРЕ. Проведите учебное пилотирование по FPV-изображению через ворота в подготовленной безопасной зоне. Различите два канала связи.'
+  };
+  let writeTimer=null, selected=null, drag=null;
+  const svgns='http://www.w3.org/2000/svg', svg=$('#architecture');
+  const styles={У:{color:'#274758',dash:'',marker:'arrowU'},Э:{color:'#ae772d',dash:'',marker:'arrowE'},Д:{color:'#60799c',dash:'7 5',marker:'arrowD'},В:{color:'#a35789',dash:'3 5',marker:'arrowV'}};
+  function toast(message){const el=$('#toast');el.textContent=message;el.style.display='block';clearTimeout(el._timer);el._timer=setTimeout(()=>el.style.display='none',3600)}
+  function allData(){const result={version:1,updatedAt:new Date().toISOString(),fields:{},diagram:JSON.parse(JSON.stringify(state))};for(const f of fields){result.fields[f.id]=f.type==='checkbox'?f.checked:f.value}return result}
+  function setStatus(text,bad=false){const e=$('#saveStatus');e.textContent=text;e.classList.toggle('warn',bad)}
+  function persist(){clearTimeout(writeTimer);try{localStorage.setItem(storageKey,JSON.stringify(allData()));setStatus('✓ Автосохранено на устройстве')}catch(err){setStatus('Не удалось сохранить автоматически',true)}}
+  function scheduleSave(){setStatus('Сохранение…');clearTimeout(writeTimer);writeTimer=setTimeout(persist,450)}
+  function fillData(obj){if(!obj||obj.version!==1||typeof obj.fields!=='object'||!obj.diagram)throw Error('Неподдерживаемый формат файла');
+    for(const f of fields){if(!(f.id in obj.fields))continue;if(f.type==='checkbox')f.checked=!!obj.fields[f.id];else f.value=String(obj.fields[f.id]??'')}
+    state.nodes=Array.isArray(obj.diagram.nodes)?obj.diagram.nodes.filter(n=>n&&typeof n.id==='string'&&typeof n.text==='string'&&Number.isFinite(n.x)&&Number.isFinite(n.y)).slice(0,30):[];
+    state.edges=Array.isArray(obj.diagram.edges)?obj.diagram.edges.filter(e=>e&&typeof e.from==='string'&&typeof e.to==='string'&&styles[e.type]).slice(0,50):[];
+    state.counter=Number.isFinite(obj.diagram.counter)?obj.diagram.counter:1000;
+    selected=null;syncForm();renderDiagram();persist();
+  }
+  function syncForm(){for(const el of $$('[data-mirror]')){const field=document.getElementById(el.dataset.mirror);const value=field?.value||'';let pretty=value;if(field?.id==='date'&&value&&/^\d{4}-\d\d-\d\d$/.test(value)){const [y,m,d]=value.split('-');pretty=`${d}.${m}.${y}`}
+      if(field?.id==='mission'&&value)pretty=value+' — '+({М1:'Осмотр крыши',М2:'Протяжённый маршрут',М3:'Полёт по камере'}[value]||'');el.textContent=pretty||' ';el.classList.toggle('empty',!pretty)}
+    const code=$('#mission').value;$('#missionDescription').textContent=missionText[code]||'Выберите номер полученной от преподавателя карточки миссии — здесь появится условие.'}
+  for(const f of fields){f.addEventListener('input',()=>{syncForm();scheduleSave()});f.addEventListener('change',()=>{syncForm();scheduleSave()})}
+  function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+  function sanitizeFilename(text){return (text||'Команда').trim().replace(/[^А-Яа-яЁёA-Za-z0-9-]+/g,'_').slice(0,45)||'Команда'}
+  $('#newSheetBtn').addEventListener('click',()=>{if(!confirm('Очистить все ответы и схему для новой команды? Перед этим сохраните копию ответов, если они нужны.'))return;for(const f of fields){if(f.type==='checkbox')f.checked=false;else f.value=''}state.nodes=[];state.edges=[];state.counter=1;selected=null;syncForm();renderDiagram();persist();toast('Бланк очищен, можно начинать новую работу')});
+  $('#saveJsonBtn').addEventListener('click',()=>{persist();download(JSON.stringify(allData(),null,2),'БАС_ПР1_'+sanitizeFilename($('#group').value)+'_ответы.json','application/json');toast('Копия ответов сохранена. Этот файл можно загрузить в бланк позднее.')});
+  $('#loadJsonBtn').addEventListener('click',()=>$('#loadJsonFile').click());
+  $('#loadJsonFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(!confirm('Заменить текущие ответы данными из выбранного файла?'))return;fillData(JSON.parse(await file.text()));toast('Ответы и схема восстановлены')}catch(err){toast('Не удалось загрузить файл: '+err.message)}finally{e.target.value=''}});
+  $('#printBtn').addEventListener('click',()=>{syncForm();persist();window.print()});
+  window.addEventListener('beforeprint',()=>{syncForm();renderDiagram();persist()});
+  // SVG helpers (all user text is assigned via textContent, never innerHTML)
+  function addSvg(parent,name,attrs={},content){const e=document.createElementNS(svgns,name);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(content!==undefined)e.textContent=content;parent.appendChild(e);return e}
+  function wrapLabel(text){const words=text.trim().split(/\s+/),lines=[''];for(const w of words){let last=lines.length-1;if((lines[last]+' '+w).trim().length>19&&lines[last])lines.push(w);else lines[last]=(lines[last]+' '+w).trim()}return lines.slice(0,3)}
+  function nodeDisplayName(id){const n=state.nodes.find(n=>n.id===id);return n?n.text:'—'}
+  function coord(x,y,n){const w=150,h=47;const cx=n.x+w/2,cy=n.y+h/2;const dx=x-cx,dy=y-cy;const t=1/Math.max(Math.abs(dx)/(w/2),Math.abs(dy)/(h/2),1);return {x:cx+dx*t,y:cy+dy*t}}
+  function renderDiagram(){const lines=$('#diagramEdges'),blocks=$('#diagramNodes');lines.replaceChildren();blocks.replaceChildren();const present=new Set(state.nodes.map(n=>n.id));state.edges=state.edges.filter(e=>present.has(e.from)&&present.has(e.to));
+    $('#diagramEmpty').setAttribute('display',state.nodes.length?'none':'block');
+    for(const e of state.edges){const a=state.nodes.find(n=>n.id===e.from),b=state.nodes.find(n=>n.id===e.to);if(!a||!b||a.id===b.id)continue;
+      const p1=coord(b.x+75,b.y+23.5,a),p2=coord(a.x+75,a.y+23.5,b),s=styles[e.type]||styles['Д'];
+      addSvg(lines,'line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,stroke:'#ffffff','stroke-width':6});
+      addSvg(lines,'line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,stroke:s.color,'stroke-width':e.type==='Э'?3.2:2.4,'stroke-dasharray':s.dash,'marker-end':`url(#${s.marker})`});
+      const cx=(p1.x+p2.x)/2,cy=(p1.y+p2.y)/2;
+      addSvg(lines,'rect',{x:cx-10,y:cy-12,width:21,height:20,rx:5,fill:'#fff',stroke:s.color,'stroke-width':1});addSvg(lines,'text',{x:cx+.5,y:cy+2,'text-anchor':'middle','font-size':12,'font-weight':800,fill:s.color},e.type);
+    }
+    for(const n of state.nodes){const g=addSvg(blocks,'g',{'data-node-id':n.id});const active=n.id===selected;
+      const ground=n.segment==='ground',fill=ground?'#edf2fc':'#e4f4f0',border=active?'#c17e2e':(ground?'#748dad':'#0a8077');
+      addSvg(g,'rect',{x:n.x,y:n.y,width:150,height:47,rx:8,fill,stroke:border,'stroke-width':active?3:1.6});
+      const lines=wrapLabel(n.text),lineH=14,startY=n.y+24-(lines.length-1)*lineH/2;
+      lines.forEach((line,i)=>addSvg(g,'text',{x:n.x+75,y:startY+i*lineH,fill:'#183748','font-size':lines.length===3?11:12.5,'text-anchor':'middle','font-weight':700,'pointer-events':'none'},line));
+      addSvg(g,'rect',{x:n.x,y:n.y,width:150,height:47,fill:'transparent','data-node-id':n.id});
+    }
+    refreshSelections();renderLinksList();
+  }
+  function refreshSelections(){const previousFrom=$('#fromNode').value,previousTo=$('#toNode').value;
+    for(const element of [$('#fromNode'),$('#toNode')]){const text=element=== $('#fromNode')?'— Источник —':'— Получатель —';element.replaceChildren(new Option(text,''));for(const n of state.nodes)element.add(new Option(n.text,n.id))}
+    if(state.nodes.some(n=>n.id===previousFrom))$('#fromNode').value=previousFrom;
+    if(state.nodes.some(n=>n.id===previousTo))$('#toNode').value=previousTo;
+    const n=state.nodes.find(n=>n.id===selected);$('#editNodeText').disabled=!n;$('#renameNode').disabled=!n;$('#deleteNode').disabled=!n;
+    if(n&&document.activeElement!==$('#editNodeText'))$('#editNodeText').value=n.text;
+    if(!n)$('#editNodeText').value='';
+  }
+  function renderLinksList(){const parent=$('#edgeList');parent.replaceChildren();$('#edgeEmpty').style.display=state.edges.length?'none':'';
+    for(const edge of state.edges){const tag=document.createElement('span');tag.className='edge-pill';const text=document.createElement('span');text.textContent=`${nodeDisplayName(edge.from)} → ${nodeDisplayName(edge.to)} · ${edge.type}`;tag.append(text);
+      const b=document.createElement('button');b.type='button';b.textContent='×';b.setAttribute('aria-label','Удалить связь');b.title='Удалить связь';b.addEventListener('click',()=>{state.edges=state.edges.filter(e=>e.id!==edge.id);renderDiagram();scheduleSave()});tag.append(b);parent.append(tag)}
+  }
+  function defaultSpot(segment){const nodes=state.nodes.filter(n=>n.segment===segment);const count=nodes.length;if(segment==='ground')return{x:45+(count%5)*170,y:359+Math.floor(count/5)*40};return{x:45+(count%5)*170,y:55+(Math.floor(count/5)%4)*67}}
+  $('#nodePreset').addEventListener('change',e=>{const text=e.target.value;$('#nodeSegment').value=['Пульт оператора','Наземная станция','Видеоприёмник / очки'].includes(text)?'ground':'air'});
+  $('#addNode').addEventListener('click',()=>{let text=$('#nodePreset').value;if(!text){toast('Сначала выберите компонент.');return}if(text==='__custom'){text=prompt('Название вашего компонента (до 60 символов):','');if(text===null)return;text=text.trim().slice(0,60);if(!text){toast('Не введено название компонента');return}}
+    if(state.nodes.length>=25){toast('На схеме уже 25 блоков. Удалите лишние.');return}
+    const segment=$('#nodeSegment').value,pos=defaultSpot(segment);state.nodes.push({id:'n'+(state.counter++),text,segment,x:pos.x,y:pos.y});selected=state.nodes[state.nodes.length-1].id;renderDiagram();scheduleSave()});
+  $('#addEdge').addEventListener('click',()=>{const from=$('#fromNode').value,to=$('#toNode').value,type=$('#edgeType').value;if(!from||!to){toast('Укажите источник и получатель связи');return}if(from===to){toast('Выберите два разных блока');return}if(state.edges.some(e=>e.from===from&&e.to===to&&e.type===type)){toast('Такая связь уже есть');return}if(state.edges.length>=40){toast('Достигнуто максимальное число связей');return}
+    state.edges.push({id:'e'+(state.counter++),from,to,type});renderDiagram();scheduleSave()});
+  $('#renameNode').addEventListener('click',()=>{const n=state.nodes.find(n=>n.id===selected),v=$('#editNodeText').value.trim().slice(0,60);if(!n||!v){toast('Введите название блока');return}n.text=v;renderDiagram();scheduleSave()});
+  $('#deleteNode').addEventListener('click',()=>{if(!selected)return;state.nodes=state.nodes.filter(n=>n.id!==selected);state.edges=state.edges.filter(e=>e.from!==selected&&e.to!==selected);selected=null;renderDiagram();scheduleSave()});
+  $('#clearDiagram').addEventListener('click',()=>{if(!state.nodes.length)return;if(!confirm('Удалить всю структурную схему? Остальные ответы останутся.'))return;state.nodes=[];state.edges=[];selected=null;renderDiagram();scheduleSave()});
+  function svgCoordinates(evt){const rect=svg.getBoundingClientRect(),scaleX=920/rect.width,scaleY=460/rect.height;return{x:(evt.clientX-rect.left)*scaleX,y:(evt.clientY-rect.top)*scaleY}}
+  svg.addEventListener('pointerdown',evt=>{const g=evt.target.closest('[data-node-id]');if(!g)return;const id=g.getAttribute('data-node-id'),n=state.nodes.find(n=>n.id===id);if(!n)return;selected=id;const c=svgCoordinates(evt);drag={id,dx:c.x-n.x,dy:c.y-n.y};svg.setPointerCapture(evt.pointerId);renderDiagram();evt.preventDefault()});
+  svg.addEventListener('pointermove',evt=>{if(!drag)return;const n=state.nodes.find(n=>n.id===drag.id);if(!n)return;const c=svgCoordinates(evt);n.x=Math.max(15,Math.min(755,Math.round(c.x-drag.dx)));const y=drag.id&&n.segment==='ground'?347:43;n.y=n.segment==='ground'?Math.max(345,Math.min(395,Math.round(c.y-drag.dy))):Math.max(42,Math.min(252,Math.round(c.y-drag.dy)));renderDiagram()});
+  function finishDrag(){if(!drag)return;drag=null;scheduleSave()}
+  svg.addEventListener('pointerup',finishDrag);svg.addEventListener('pointercancel',finishDrag);
+  $('#editNodeText').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#renameNode').click()}});
+  function init(){try{const json=localStorage.getItem(storageKey);if(json){fillData(JSON.parse(json));setStatus('✓ Предыдущие ответы восстановлены');return}}catch(e){setStatus('Локальное сохранение недоступно',true)}syncForm();renderDiagram();setStatus('Можно приступать')}
+  init();
+})();
+</script>
+</body>
+</html>
